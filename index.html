@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERE vs. Catequesis — Referencia docente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ere: #3d6b3a; --ere-l: #e8f0e7; --ere-m: #b8d4b5;
+      --cat: #7a3628; --cat-l: #f5e8e5; --cat-m: #d4a89a;
+      --mid: #4a4532; --mid-l: #f0ede4; --mid-m: #c8c2ad;
+      --leo: #2a4a6b; --leo-l: #e5eef5;
+      --fran: #5a4a1a; --fran-l: #f5f0e0;
+      --bg: #faf9f6;
+      --bg2: #f2f0eb;
+      --text: #1a1a18;
+      --text2: #5a5950;
+      --text3: #8a8878;
+      --border: rgba(0,0,0,0.10);
+      --border2: rgba(0,0,0,0.18);
+      --ff-head: 'Lora', Georgia, serif;
+      --ff-body: 'DM Sans', system-ui, sans-serif;
+      --radius: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #18181a; --bg2: #222224;
+        --text: #e8e6e0; --text2: #a0a090; --text3: #6a6a60;
+        --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.18);
+        --ere-l: #1e2e1c; --ere-m: #3a5438;
+        --cat-l: #2c1a18; --cat-m: #6a3828;
+        --mid-l: #22201a; --mid-m: #4a4535;
+        --leo-l: #182030; --fran-l: #22200e;
+      }
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--ff-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 1rem 3rem;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .hero-eyebrow {
+      font-size: 11px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: .5rem;
+    }
+    .hero-title {
+      font-family: var(--ff-head);
+      font-size: clamp(24px, 5vw, 32px);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.25;
+    }
+    .hero-subtitle {
+      font-size: 14px;
+      color: var(--text2);
+      margin-top: .5rem;
+      line-height: 1.65;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .source-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      border: 0.5px solid var(--border2);
+      border-radius: 20px;
+      padding: 3px 10px;
+      color: var(--text2);
+      background: var(--bg2);
+    }
+
+    /* ── TABLE HEADER ── */
+    .cols-header {
+      display: grid;
+      grid-template-columns: 1fr 148px 1fr;
+      gap: 0;
+      margin: 1.5rem 0 0;
+    }
+    .col-label {
+      padding: .55rem .75rem;
+      border-radius: 8px 8px 0 0;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      letter-spacing: .04em;
+    }
+    .col-ere  { background: var(--ere-l);  color: var(--ere); }
+    .col-cat  { background: var(--cat-l);  color: var(--cat); }
+    .col-mid  { background: var(--mid-l);  color: var(--mid); font-size: 11px; }
+
+    .tip {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text3);
+      padding: .4rem 0 .15rem;
+      letter-spacing: .02em;
+    }
+
+    /* ── DIMENSION ROWS ── */
+    .dim-list {
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+      padding-bottom: .5rem;
+    }
+    .dim-row {
+      display: grid;
+      grid-template-columns: 1fr 148px 1fr;
+      gap: 0;
+      cursor: pointer;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 0.5px solid var(--border);
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .dim-row:hover  { box-shadow: 0 2px 10px rgba(0,0,0,.08); border-color: var(--border2); }
+    .dim-row.active { border-color: var(--border2); }
+    .cell {
+      padding: .65rem .75rem;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .cell strong { display: block; font-weight: 500; }
+    .cell-ere { background: var(--ere-l); color: var(--ere); }
+    .cell-cat { background: var(--cat-l); color: var(--cat); }
+    .cell-mid {
+      background: var(--mid-l); color: var(--mid);
+      text-align: center; font-size: 11px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── DETAIL PANEL ── */
+    .detail-panel {
+      padding: 1rem 1.25rem;
+      border: 0.5px solid var(--border2);
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--bg2);
+      display: none;
+      margin-bottom: .15rem;
+    }
+    .detail-panel.open { display: block; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: .75rem;
+    }
+    @media (max-width: 520px) {
+      .detail-grid { grid-template-columns: 1fr; }
+      .cols-header, .dim-row { grid-template-columns: 1fr; }
+      .cell-mid { border-top: 0.5px solid var(--border); }
+    }
+    .detail-block-label {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: .35rem;
+    }
+    .detail-block-label.ere { color: var(--ere); }
+    .detail-block-label.cat { color: var(--cat); }
+    .detail-text { font-size: 13px; color: var(--text); line-height: 1.65; }
+    .ref-section { border-top: 0.5px solid var(--border); padding-top: .65rem; margin-top: .25rem; }
+    .ref-label {
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: .35rem;
+      font-weight: 500;
+    }
+    .ref-item { font-size: 11.5px; color: var(--text2); line-height: 1.55; font-style: italic; }
+    .ref-item + .ref-item { margin-top: .2rem; }
+
+    /* ── TABS ── */
+    .tabs-wrap { margin-top: 2rem; }
+    .tabs {
+      display: flex;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius) var(--radius) 0 0;
+      overflow: hidden;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: .6rem .5rem;
+      font-size: 12.5px;
+      font-family: var(--ff-body);
+      background: var(--bg);
+      border: none;
+      cursor: pointer;
+      color: var(--text2);
+      border-right: 0.5px solid var(--border);
+      transition: background .15s;
+    }
+    .tab-btn:last-child { border-right: none; }
+    .tab-btn.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+    .tab-btn:hover:not(.active) { background: var(--bg2); }
+    .tab-content {
+      display: none;
+      padding: 1.25rem;
+      border: 0.5px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--bg2);
+    }
+    .tab-content.active { display: block; }
+
+    /* ── PRINCIPLE TAB ── */
+    .synth-principle {
+      font-family: var(--ff-head);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: .5rem;
+    }
+    .synth-text { font-size: 13px; color: var(--text); line-height: 1.7; }
+    .synth-quote {
+      font-family: var(--ff-head);
+      font-style: italic;
+      font-size: 13px;
+      color: var(--text2);
+      border-left: 2px solid var(--mid-m);
+      padding-left: .75rem;
+      margin-top: .75rem;
+      line-height: 1.65;
+    }
+    .synth-who { font-size: 10px; color: var(--text3); margin-top: .2rem; font-style: normal; }
+
+    /* ── POPE CARDS ── */
+    .pope-card {
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      margin-bottom: .75rem;
+      background: var(--bg);
+    }
+    .pope-card:last-child { margin-bottom: 0; }
+    .pope-header { display: flex; align-items: center; gap: 10px; margin-bottom: .6rem; }
+    .pope-icon {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 500;
+      flex-shrink: 0;
+    }
+    .pope-icon-fran { background: var(--fran-l); color: var(--fran); }
+    .pope-icon-leo  { background: var(--leo-l);  color: var(--leo);  }
+    .pope-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .pope-doc  { font-size: 11px; color: var(--text3); font-style: italic; }
+    .pope-quote {
+      font-family: var(--ff-head);
+      font-style: italic;
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.65;
+      border-left: 2px solid var(--border2);
+      padding-left: .75rem;
+      margin-bottom: .6rem;
+    }
+    .pope-commentary { font-size: 12.5px; color: var(--text2); line-height: 1.6; }
+    .pope-conn {
+      font-size: 11.5px;
+      color: var(--text3);
+      margin-top: .5rem;
+      padding: .35rem .6rem;
+      background: var(--bg2);
+      border-radius: 5px;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 1.5rem 1rem 1rem;
+      font-size: 11px;
+      color: var(--text3);
+      border-top: 0.5px solid var(--border);
+      margin-top: 2rem;
+    }
+    .footer strong { color: var(--text2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Pedagogía Religiosa · Referencia docente</div>
+    <h1 class="hero-title">ERE vs. Catequesis</h1>
+    <p class="hero-subtitle">Dos caminos distintos y complementarios en la formación de la fe. Verificado en el Magisterio de la Iglesia mediante Magisterium AI.</p>
+    <div class="source-badges">
+      <span class="badge">✦ Magisterium AI</span>
+      <span class="badge">✦ Juan Pablo II</span>
+      <span class="badge">✦ Francisco · Pacto Educativo Global</span>
+      <span class="badge">✦ León XIV · Drawing New Maps of Hope</span>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="cols-header">
+    <div class="col-label col-ere">Enseñanza Religiosa Escolar</div>
+    <div class="col-label col-mid">Dimensión</div>
+    <div class="col-label col-cat">Catequesis</div>
+  </div>
+  <p class="tip">↓ Toca una fila para profundizar</p>
+  <div class="dim-list" id="dimList"></div>
+  <div id="detailPanel" class="detail-panel">
+    <div class="detail-grid">
+      <div class="detail-block">
+        <div class="detail-block-label ere">ERE</div>
+        <div class="detail-text" id="dp-ere-text"></div>
+      </div>
+      <div class="detail-block">
+        <div class="detail-block-label cat">Catequesis</div>
+        <div class="detail-text" id="dp-cat-text"></div>
+      </div>
+    </div>
+    <div class="ref-section">
+      <div class="ref-label">Referencias del Magisterio</div>
+      <div id="dp-refs"></div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-wrap">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('principio',this)">Principio fundamental</button>
+      <button class="tab-btn" onclick="showTab('francisco',this)">Francisco</button>
+      <button class="tab-btn" onclick="showTab('leon',this)">León XIV</button>
+    </div>
+
+    <div id="principio" class="tab-content active">
+      <div class="synth-principle">Distintas y complementarias — nunca separadas</div>
+      <p class="synth-text">La ERE y la Catequesis comparten el mismo destinatario —el estudiante— y un contenido objetivo semejante, pero con modalidades propias y ámbitos distintos. La ERE puede ser premisa cualificada de la catequesis, o reflexión ulterior sobre sus contenidos ya recibidos.</p>
+      <blockquote class="synth-quote">
+        Entre ellas existe una íntima conexión.
+        <div class="synth-who">Juan Pablo II · Discurso a los sacerdotes de Roma, 5 marzo 1981</div>
+      </blockquote>
+      <blockquote class="synth-quote">
+        La enseñanza religiosa escolar puede considerarse tanto como una premisa cualificada para la catequesis como una reflexión ulterior sobre los contenidos de la catequesis ya adquiridos.
+        <div class="synth-who">Juan Pablo II · Discurso al Episcopado Italiano, 25 octubre 1984</div>
+      </blockquote>
+    </div>
+
+    <div id="francisco" class="tab-content">
+      <div class="pope-card">
+        <div class="pope-header">
+          <div class="pope-icon pope-icon-fran">F</div>
+          <div>
+            <div class="pope-name">Papa Francisco</div>
+            <div class="pope-doc">Pacto Educativo Global · 2020–2021</div>
+          </div>
+        </div>
+        <blockquote class="pope-quote">La educación de las tradiciones religiosas reafirma su misión de educar integralmente: cabeza, manos, corazón y alma — incluyendo el conocimiento del Trascendente.</blockquote>
+        <p class="pope-commentary">El Pacto Educativo Global no distingue técnicamente ERE de catequesis, pero ofrece el marco del <em>por qué</em> la escuela tiene un rol educativo religioso propio: la formación integral (cabeza, corazón, manos, alma) pertenece a la misión escolar, mientras la catequesis apunta a la vida sacramental y comunitaria.</p>
+        <div class="pope-conn">↗ La ERE responde a la misión de formación integral en la escuela; la catequesis, a la iniciación en la fe de la comunidad eclesial.</div>
+      </div>
+      <div class="pope-card">
+        <div class="pope-header">
+          <div class="pope-icon pope-icon-fran">F</div>
+          <div>
+            <div class="pope-name">Papa Francisco</div>
+            <div class="pope-doc">Reunión "Religions and Education" · Pacto Educativo Global</div>
+          </div>
+        </div>
+        <blockquote class="pope-quote">Familia, escuela e instituciones religiosas deben actuar conjuntamente. Educar no es solo transmitir conceptos: integra el trabajo de la mente, el corazón y las manos.</blockquote>
+        <p class="pope-commentary">El Pacto refuerza la colaboración entre escuela e Iglesia. El docente de religión actúa desde la escuela, pero en diálogo real con la familia y la comunidad parroquial — exactamente como enseña la distinción clásica entre ERE y catequesis.</p>
+        <div class="pope-conn">↗ El docente de la fe es el punto de encuentro entre la misión escolar y la misión eclesial.</div>
+      </div>
+    </div>
+
+    <div id="leon" class="tab-content">
+      <div class="pope-card">
+        <div class="pope-header">
+          <div class="pope-icon pope-icon-leo">L</div>
+          <div>
+            <div class="pope-name">Papa León XIV</div>
+            <div class="pope-doc">Carta Apostólica "Drawing New Maps of Hope" · 60 aniversario Gravissimum Educationis (2025)</div>
+          </div>
+        </div>
+        <blockquote class="pope-quote">Diseñar nuevos mapas de esperanza: esta es la urgencia del mandato. La educación no es una actividad ancilar, sino que forma la trama misma de la evangelización: es la manera concreta en que el Evangelio se vuelve gesto educativo, relación y cultura.</blockquote>
+        <p class="pope-commentary">León XIV eleva la educación al centro de la misión evangelizadora. Esto da fundamento magisterial al docente de religión en la escuela: no es un catequista desplazado, sino un evangelizador que actúa mediante el gesto educativo propio de la escuela.</p>
+        <div class="pope-conn">↗ La ERE es la forma concreta en que el Evangelio "se vuelve gesto educativo" en el aula. La catequesis lo hace en la comunidad creyente.</div>
+      </div>
+      <div class="pope-card">
+        <div class="pope-header">
+          <div class="pope-icon pope-icon-leo">L</div>
+          <div>
+            <div class="pope-name">Papa León XIV</div>
+            <div class="pope-doc">Jubileo del Mundo de la Educación · Encuentro con educadores, 31 oct. 2025</div>
+          </div>
+        </div>
+        <blockquote class="pope-quote">Compartir conocimiento no es suficiente para enseñar: se necesita amor. La enseñanza nunca debe separarse del amor. El Maestro está dentro — la verdad se transmite en el encuentro entre personas.</blockquote>
+        <p class="pope-commentary">El papa describe el rol del docente desde cuatro palabras de san Agustín: interioridad, unidad, amor y alegría. Esto ilumina tanto la ERE como la catequesis: ambas exigen un docente que enseña desde el interior, no solo desde el programa.</p>
+        <div class="pope-conn">↗ El docente de ERE actúa desde la pedagogía; el catequista, desde la fe vivida. Pero ambos necesitan el amor como condición.</div>
+      </div>
+      <div class="pope-card">
+        <div class="pope-header">
+          <div class="pope-icon pope-icon-leo">L</div>
+          <div>
+            <div class="pope-name">Papa León XIV</div>
+            <div class="pope-doc">Exhortación Apostólica <em>Dilexi te</em> · 4 octubre 2025</div>
+          </div>
+        </div>
+        <blockquote class="pope-quote">El objetivo era transmitir no solo conocimientos seculares, sino también la sabiduría del Evangelio — para reconocer la acción amorosa de Dios Creador y Redentor.</blockquote>
+        <p class="pope-commentary">Hablando de los Piaristas y san Juan Bautista de La Salle, León XIV distingue implícitamente la instrucción secular de la transmisión de la sabiduría del Evangelio — ecos de la distinción ERE/catequesis en la historia de la educación católica.</p>
+        <div class="pope-conn">↗ La escuela forma; la comunidad de fe transmite la sabiduría del Evangelio. Roles distintos, misión complementaria.</div>
+      </div>
+    </div>
+  </div><!-- /tabs-wrap -->
+
+  <footer class="footer">
+    Fuentes verificadas con <strong>Magisterium AI</strong> · Juan Pablo II · Congregación para la Educación Católica ·
+    Francisco (Pacto Educativo Global, 2020) · León XIV (<em>Drawing New Maps of Hope</em>, 2025)<br />
+    Pedagogía Religiosa — Naturaleza e identidad de la enseñanza religiosa escolar católica
+  </footer>
+
+</div><!-- /container -->
+
+<script>
+const dims = [
+  { label:"La ciencia de fondo", ere_short:"Pedagogía didáctica", cat_short:"Teología pastoral catequética",
+    ere_long:"La ERE se sustenta en la pedagogía didáctica y las ciencias de la educación. Busca integrar el hecho religioso en el marco epistemológico de la escuela, con rigor académico y método propio.",
+    cat_long:"La catequesis se apoya en la teología pastoral y catequética. Su marco no es la ciencia escolar sino la tradición viva de la Iglesia, transmitida de generación en generación.",
+    refs:["Congregación para la Educación Católica, The Religious Dimension of Education in a Catholic School (1988).","Juan Pablo II, Discurso a los sacerdotes de la diócesis de Roma, 5 marzo 1981."] },
+  { label:"El tipo de educación", ere_short:"Enseñanza Religiosa Escolar", cat_short:"Catequesis",
+    ere_long:"La ERE es una forma de enseñanza formal, integrada en el currículo escolar, con programación, evaluación y criterios propios de la institución educativa. Respeta el contexto pluralista del aula.",
+    cat_long:"La catequesis es iniciación y maduración en la fe. No solo informa sobre la religión: introduce al creyente en la vida de la comunidad eclesial, los sacramentos y la oración.",
+    refs:["Juan Pablo II, Alocución a los obispos de Francia (Midi-Pyrénées), 15 marzo 1997.","Catechesi Tradendae (1979), n. 69."] },
+  { label:"La exigencia", ere_short:"Misión de la escuela", cat_short:"Misión eclesial",
+    ere_long:"La ERE responde a la misión propia de la escuela: la formación integral del estudiante como persona y ciudadano. León XIV la llama 'la trama misma de la evangelización'.",
+    cat_long:"La catequesis responde a la misión de la Iglesia: evangelizar, iniciando a los creyentes en la fe, los sacramentos y la vida cristiana en comunidad.",
+    refs:["The Religious Dimension of Education in a Catholic School (1988).","León XIV, Drawing New Maps of Hope (2025): 'la educación forma la trama misma de la evangelización'."] },
+  { label:"La justificación", ere_short:"Fundamentos educativos", cat_short:"Motivos teológico-pastorales",
+    ere_long:"La ERE se justifica desde fundamentos pedagógicos y el derecho de los estudiantes a una educación religiosa de calidad dentro del contexto escolar, respetando la libertad religiosa.",
+    cat_long:"La catequesis se justifica desde la misión evangelizadora de la Iglesia y la necesidad de crecer en la fe recibida. Su fundamento es teológico y pastoral, no académico.",
+    refs:["Catechesi Tradendae (1979), n. 69.","Francisco, Pacto Educativo Global (2020): familia, escuela e instituciones religiosas actúan conjuntamente."] },
+  { label:"Origen", ere_short:"Diálogo fe – cultura", cat_short:"Diálogo en la fe",
+    ere_long:"La ERE surge del encuentro entre fe y cultura: busca iluminar las realidades humanas y culturales desde el mensaje cristiano, sin presuponer fe en el estudiante.",
+    cat_long:"La catequesis parte de la fe ya recibida y la profundiza. Su diálogo es hacia adentro de la comunidad creyente: nutre la relación personal con Dios y la vida eclesial.",
+    refs:["The Religious Dimension of Education in a Catholic School (1988).","León XIV, Drawing New Maps of Hope (2025): la relación fe-razón no es un capítulo opcional en la educación católica."] },
+  { label:"Los fines y objetivos", ere_short:"Personalización · culturización · socialización", cat_short:"Crecimiento y maduración en la fe y la Iglesia",
+    ere_long:"La ERE tiene fines de personalización, culturización y socialización. Francisco añade: educar integralmente cabeza, corazón, manos y alma — incluyendo el conocimiento del Trascendente.",
+    cat_long:"La catequesis busca el crecimiento en la fe: encontrarse con el Señor en la oración personal, crecer en la vida sacramental y pertenecer activamente a la comunidad eclesial.",
+    refs:["Juan Pablo II, Alocución ad limina, 24 junio 2004, n. 4.","Francisco, Reunión 'Religions and Education' para el Pacto Educativo Global (2020): educación integral — cabeza, corazón, manos y alma."] },
+  { label:"Los contenidos", ere_short:"Mediaciones culturales de la revelación cristiana", cat_short:"Contenidos de la fe",
+    ere_long:"Los contenidos de la ERE incluyen las expresiones culturales del cristianismo: arte, historia, literatura, ética social y las grandes tradiciones religiosas en diálogo.",
+    cat_long:"Los contenidos de la catequesis son los del Credo, los sacramentos, la moral cristiana y la oración, según el Catecismo de la Iglesia Católica.",
+    refs:["Juan Pablo II, Alocución ad limina (24 junio 2004), n. 4.","León XIV, Dilexi te (2025): transmitir 'no solo conocimientos seculares, sino también la sabiduría del Evangelio'."] },
+  { label:"La metodología", ere_short:"Relación activa con la cultura religiosa; método fenomenológico", cat_short:"Participación activa en la relación con Dios; métodos vivenciales",
+    ere_long:"La ERE usa el método fenomenológico: acercarse a los hechos religiosos con empatía, sin exigir adhesión. Aplica los mejores métodos educativos y busca interdisciplinariedad.",
+    cat_long:"La catequesis usa métodos vivenciales: narración bíblica, celebración litúrgica, oración. Busca la participación personal en la relación con Dios.",
+    refs:["The Religious Dimension of Education in a Catholic School (1988).","León XIV, Encuentro con educadores (31 oct. 2025): 'enseñar nunca debe separarse del amor'."] },
+  { label:"Los responsables", ere_short:"Escuela – Iglesia; maestros y profesores", cat_short:"Iglesia – Catequistas",
+    ere_long:"En la ERE, la responsabilidad es compartida entre la escuela y la Iglesia. El maestro/a de religión actúa como testigo de la fe y experto pedagógico, con vocación eclesial.",
+    cat_long:"La catequesis es responsabilidad directa de la Iglesia: el obispo, los párrocos y los catequistas son los agentes primarios, apoyados por los padres de familia.",
+    refs:["The Catholic School (1977), n. 52.","Francisco, Pacto Educativo Global: la alianza entre familia, escuela e instituciones religiosas es condición del proceso educativo."] },
+  { label:"Los destinatarios", ere_short:"Ciudadanos (todos los estudiantes)", cat_short:"Cristianos (creyentes)",
+    ere_long:"La ERE se dirige a todos los estudiantes en edad escolar, sean o no creyentes. Respeta la libertad religiosa y no exige adhesión de fe.",
+    cat_long:"La catequesis se dirige a quienes han recibido el bautismo y desean crecer en la fe cristiana. Presupone o propone la adhesión personal a Jesucristo.",
+    refs:["Juan Pablo II, Discurso a los sacerdotes de Roma (5 marzo 1981).","Catechesi Tradendae (1979), n. 69."] },
+  { label:"Clase de vínculo", ere_short:"Relaciones académicas", cat_short:"Vínculo de la fe",
+    ere_long:"En la ERE el vínculo entre estudiante y docente es académico: respeto, rigor intelectual y diálogo. León XIV: el Maestro está dentro — la verdad se transmite en el encuentro entre personas.",
+    cat_long:"En la catequesis el vínculo es eclesial: el catequista acompaña al creyente como hermano mayor en la fe, testigo personal del Evangelio.",
+    refs:["León XIV, Encuentro con educadores, 31 oct. 2025: interioridad, unidad, amor y alegría (san Agustín).","Educating Together in Catholic Schools, Congregación para la Educación Católica (2007)."] },
+  { label:"El lugar", ere_short:"Escuela, lugar de cultura", cat_short:"Comunidad cristiana – familia – parroquia",
+    ere_long:"El lugar propio de la ERE es la escuela, integrada en el horario escolar. León XIV: en la escuela el Evangelio 'se vuelve gesto educativo, relación y cultura'.",
+    cat_long:"El lugar propio de la catequesis es la comunidad cristiana: la parroquia, la familia y la Iglesia local. También puede ocurrir en el colegio visto como comunidad cristiana.",
+    refs:["Juan Pablo II, Catechesi Tradendae (1979), n. 69.","León XIV, Drawing New Maps of Hope (2025): la escuela como lugar donde el Evangelio se vuelve 'gesto educativo'."] },
+  { label:"El material", ere_short:"Programas escolares", cat_short:"Manuales de catequesis",
+    ere_long:"La ERE usa programas escolares con currículo propio, aprobados por la autoridad competente (episcopal y educativa), con materiales pedagógicos adaptados al nivel.",
+    cat_long:"La catequesis usa manuales catequéticos, el Catecismo de la Iglesia Católica, y materiales inspirados en la tradición viva de la fe.",
+    refs:["The Religious Dimension of Education in a Catholic School (1988): syllabus aprobado por autoridad competente.","Juan Pablo II, Alocución ad limina (24 junio 2004), n. 4."] },
+  { label:"Las actividades complementarias", ere_short:"Confesionales · culturales · no confesionales", cat_short:"Vivenciales – apostolado",
+    ere_long:"La ERE puede incluir actividades culturales, artísticas o de servicio que no requieren confesión de fe. Francisco: promueve diálogo, paz y respeto de la conciencia.",
+    cat_long:"La catequesis se complementa con retiros, grupos de oración, apostolado, servicio y participación sacramental activa.",
+    refs:["Francisco, Pacto Educativo Global (2020): 'nunca usar el nombre de Dios para justificar violencia'; defender la libertad de conciencia.","The Religious Dimension of Education in a Catholic School (1988)."] },
+  { label:"La evaluación", ere_short:"Evaluación escolar", cat_short:"Seguimiento del proceso de fe",
+    ere_long:"La ERE utiliza evaluación escolar: pruebas, trabajos y criterios académicos propios de la institución. Evalúa conocimientos y competencias, no la fe del estudiante.",
+    cat_long:"La catequesis evalúa el proceso de fe: la participación en la oración, los sacramentos y la vida comunitaria. Es acompañamiento pastoral, no evaluación académica.",
+    refs:["The Religious Dimension of Education in a Catholic School (1988).","Juan Pablo II, Alocución a los obispos de Francia (15 marzo 1997): sin invitación a oración y sacramentos, el riesgo es abandonar la fe."] }
+];
+
+let openIdx = -1;
+const list = document.getElementById('dimList');
+const panel = document.getElementById('detailPanel');
+
+dims.forEach((d, i) => {
+  const row = document.createElement('div');
+  row.className = 'dim-row';
+  row.innerHTML = `
+    <div class="cell cell-ere"><strong>${d.ere_short}</strong></div>
+    <div class="cell cell-mid">${d.label}</div>
+    <div class="cell cell-cat"><strong>${d.cat_short}</strong></div>
+  `;
+  row.addEventListener('click', () => {
+    if (openIdx === i) {
+      row.classList.remove('active');
+      panel.classList.remove('open');
+      list.after(panel);
+      openIdx = -1;
+      return;
+    }
+    document.querySelectorAll('.dim-row').forEach(r => r.classList.remove('active'));
+    row.classList.add('active');
+    document.getElementById('dp-ere-text').textContent = d.ere_long;
+    document.getElementById('dp-cat-text').textContent = d.cat_long;
+    document.getElementById('dp-refs').innerHTML = d.refs.map(r => `<div class="ref-item">• ${r}</div>`).join('');
+    row.after(panel);
+    panel.classList.add('open');
+    openIdx = i;
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  });
+  list.appendChild(row);
+});
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
