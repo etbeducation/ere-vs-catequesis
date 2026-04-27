@@ -1,0 +1,137 @@
+name: Actualización Trimestral ERE vs Catequesis
+
+on:
+  schedule:
+    # Corre cada 3 meses: 1 de enero, abril, julio, octubre a las 8am UTC
+    - cron: '0 8 1 1,4,7,10 *'
+  workflow_dispatch: # Permite correrlo manualmente también
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Consultar Magisterium AI y generar revisión
+        id: review
+        env:
+          MAGISTERIUM_API_KEY: ${{ secrets.MAGISTERIUM_API_KEY }}
+        run: |
+          python3 << 'PYEOF'
+          import requests, json, os, datetime
+
+          api_key = os.environ["MAGISTERIUM_API_KEY"]
+          headers = {
+              "Authorization": f"Bearer {api_key}",
+              "Content-Type": "application/json"
+          }
+
+          prompt = """Revisa el contenido académico sobre la distinción entre la Enseñanza Religiosa Escolar (ERE) y la Catequesis según el Magisterio de la Iglesia Católica.
+
+          Por favor responde en JSON con este formato exacto:
+          {
+            "hay_cambios": true/false,
+            "nuevos_documentos": ["lista de documentos nuevos relevantes si los hay"],
+            "correcciones": ["lista de correcciones a referencias existentes si las hay"],
+            "resumen": "resumen breve de los hallazgos",
+            "fecha_revision": "YYYY-MM-DD"
+          }
+
+          Documentos ya incluidos en la página actual:
+          - The Religious Dimension of Education in a Catholic School (1988)
+          - Juan Pablo II, Discurso a los sacerdotes de Roma, 5 marzo 1981
+          - Juan Pablo II, Discurso al Episcopado Italiano, 25 octubre 1984
+          - Catechesi Tradendae (1979)
+          - Francisco, Pacto Educativo Global (2020)
+          - León XIV, Drawing New Maps of Hope (2025)
+          - León XIV, Dilexi te (2025)
+          - León XIV, Encuentro con educadores, 31 oct. 2025
+
+          ¿Hay algún documento nuevo del Magisterio posterior a abril 2026 que sea relevante para esta distinción? ¿Alguna referencia existente requiere corrección?"""
+
+          response = requests.post(
+              "https://api.magisterium.com/v1/chat/completions",
+              headers=headers,
+              json={
+                  "model": "magisterium-1",
+                  "messages": [{"role": "user", "content": prompt}]
+              },
+              timeout=60
+          )
+
+          result = response.json()
+          content = result["choices"][0]["message"]["content"]
+
+          content = content.strip()
+          if content.startswith("```"):
+              content = content.split("```")[1]
+              if content.startswith("json"):
+                  content = content[4:]
+          content = content.strip()
+
+          data = json.loads(content)
+          print(f"Resultado: {json.dumps(data, ensure_ascii=False, indent=2)}")
+
+          with open("revision_result.json", "w") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"hay_cambios={str(data.get('hay_cambios', False)).lower()}\n")
+              f.write(f"resumen={data.get('resumen', 'Sin cambios detectados')}\n")
+          PYEOF
+
+      - name: Crear Pull Request con cambios si los hay
+        if: steps.review.outputs.hay_cambios == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          BRANCH="actualizacion-trimestral-$DATE"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          mkdir -p revisiones
+          cp revision_result.json "revisiones/revision-$DATE.json"
+          git add revisiones/
+          git commit -m "Revisión trimestral Magisterium AI - $DATE"
+          git push origin "$BRANCH"
+          RESUMEN="${{ steps.review.outputs.resumen }}"
+          gh pr create \
+            --title "📚 Revisión trimestral ERE vs Catequesis - $DATE" \
+            --body "## Revisión automática via Magisterium AI\n\n**Fecha:** $DATE\n**Estado:** Se detectaron cambios o nuevos documentos relevantes\n\n### Resumen\n$RESUMEN\n\n### Próximos pasos\n1. Revisar el archivo revisiones/revision-$DATE.json\n2. Si procede, actualizar index.html con las nuevas referencias\n3. Aprobar y hacer merge de este PR para publicar\n\n---\n*Generado automáticamente por GitHub Actions + Magisterium AI*" \
+            --head "$BRANCH" \
+            --base main
+
+      - name: Registrar revisión sin cambios
+        if: steps.review.outputs.hay_cambios == 'false'
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          mkdir -p revisiones
+          cp revision_result.json "revisiones/revision-$DATE.json"
+          echo "✅ Revisión $DATE completada — Sin cambios necesarios"
+
+      - name: Commit registro de revisión
+        if: steps.review.outputs.hay_cambios == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add revisiones/
+          git diff --staged --quiet || git commit -m "Registro revisión trimestral $DATE — sin cambios"
+          git push origin main
+
