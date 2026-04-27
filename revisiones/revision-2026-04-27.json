@@ -1,5 +1,7 @@
 {
   "hay_cambios": false,
-  "resumen": "Error: HTTPSConnectionPool(host='www.magisterium.com', port=443): Read timed out. (read timeout=60)",
+  "nuevos_documentos": [],
+  "correcciones": [],
+  "resumen": "Con la documentación disponible (incluyendo los textos indicados) no se identifican documentos del Magisterio posteriores a abril de 2026 que aporten novedades relevantes para la distinción entre ERE (Educación Religiosa Escolar) y catequesis; por tanto, no hay cambios ni nuevas incorporaciones en este momento.",
   "fecha_revision": "2026-04-27"
 }
