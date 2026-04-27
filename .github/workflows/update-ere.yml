@@ -37,8 +37,8 @@ jobs:
           api_key = os.environ["MAGISTERIUM_API_KEY"]
           today = date.today().isoformat()
 
-          prompt = f"""Revisa la distinción ERE vs Catequesis según el Magisterio católico. Responde SOLO en JSON sin markdown:
-          {{"hay_cambios": false, "nuevos_documentos": [], "correcciones": [], "resumen": "texto", "fecha_revision": "{today}"}}
+          prompt = f"""Revisa la distincion ERE vs Catequesis segun el Magisterio catolico. Responde SOLO en JSON sin markdown:
+          {{"hay_cambios": false, "nuevos_documentos": [], "correcciones": [], "resumen": "texto breve", "fecha_revision": "{today}"}}
           Documentos ya incluidos: The Religious Dimension of Education in a Catholic School (1988), Juan Pablo II Discurso 1981, Catechesi Tradendae (1979), Francisco Pacto Educativo Global (2020), Leon XIV Drawing New Maps of Hope (2025), Leon XIV Dilexi te (2025).
           Hay documentos nuevos del Magisterio relevantes posteriores a abril 2026?"""
 
@@ -49,7 +49,7 @@ jobs:
                   timeout=60)
               txt = r.json()["choices"][0]["message"]["content"].strip()
           except Exception as e:
-              txt = f'{{"hay_cambios": false, "resumen": "Error: {e}", "fecha_revision": "{today}"}}'
+              txt = f'{{"hay_cambios": false, "resumen": "Error: {str(e)[:100]}", "fecha_revision": "{today}"}}'
 
           if '```' in txt:
               for p in txt.split('```'):
@@ -60,35 +60,31 @@ jobs:
           try:
               data = json.loads(txt)
           except:
-              data = {"hay_cambios": False, "resumen": "Error parseando", "fecha_revision": today}
+              data = {"hay_cambios": False, "resumen": "Error parseando respuesta", "fecha_revision": today}
 
           with open("revision_result.json", "w") as f:
               json.dump(data, f, ensure_ascii=False, indent=2)
 
-          resumen = data.get('resumen','Sin datos').replace('\n',' ')
-          nuevos = ', '.join(data.get('nuevos_documentos',[])) or 'Ninguno'
+          resumen = data.get('resumen', 'Sin datos').replace('\n', ' ').replace('"', '')
+          nuevos = ', '.join(data.get('nuevos_documentos', [])) or 'Ninguno'
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"hay_cambios={str(data.get('hay_cambios',False)).lower()}\n")
+              f.write(f"hay_cambios={str(data.get('hay_cambios', False)).lower()}\n")
               f.write(f"resumen={resumen}\n")
               f.write(f"nuevos={nuevos}\n")
               f.write(f"fecha={today}\n")
           PYEOF
 
-      - name: Notificar sin cambios (Issue con @mention)
+      - name: Crear Issue de notificacion (sin cambios)
         if: steps.review.outputs.hay_cambios == 'false'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GH_TOKEN }}
-          script: |
-            const fecha = '${{ steps.review.outputs.fecha }}';
-            const resumen = '${{ steps.review.outputs.resumen }}';
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `✅ Revisión trimestral ERE vs Catequesis - ${fecha} - Sin cambios`,
-              body: `## Revisión trimestral completada\n\n@etbeducation\n\n**Fecha:** ${fecha}\n**Resultado:** ✅ Sin cambios necesarios\n\n### Resumen de Magisterium AI\n${resumen}\n\n### Conclusión\nLas referencias y contenidos del sitio web siguen siendo válidos y actualizados según el Magisterio.\n\n---\n*Revisión automática: GitHub Actions + Magisterium AI*`,
-            });
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          DATE="${{ steps.review.outputs.fecha }}"
+          RESUMEN="${{ steps.review.outputs.resumen }}"
+          gh issue create \
+            --title "Revision trimestral ERE vs Catequesis - $DATE - Sin cambios" \
+            --body "Revision trimestral completada el $DATE. Resultado: Sin cambios necesarios. Resumen de Magisterium AI: $RESUMEN. Las referencias del sitio web siguen siendo validas. Revision automatica por GitHub Actions + Magisterium AI."
 
       - name: Guardar registro sin cambios
         if: steps.review.outputs.hay_cambios == 'false'
@@ -101,7 +97,7 @@ jobs:
           mkdir -p revisiones
           cp revision_result.json "revisiones/revision-$DATE.json"
           git add revisiones/
-          git diff --staged --quiet || git commit -m "Revisión trimestral $DATE - sin cambios"
+          git diff --staged --quiet || git commit -m "Revision trimestral $DATE - sin cambios"
           git push origin main
 
       - name: Crear Pull Request si hay cambios
@@ -119,10 +115,10 @@ jobs:
           mkdir -p revisiones
           cp revision_result.json "revisiones/revision-$DATE.json"
           git add revisiones/
-          git commit -m "Revisión trimestral $DATE - hay cambios"
+          git commit -m "Revision trimestral $DATE - hay cambios"
           git push origin "$BRANCH"
           gh pr create \
-            --title "📚 Revisión trimestral ERE vs Catequesis - $DATE" \
-            --body "@etbeducation\n\n## 🚨 Se detectaron cambios\n\n**Fecha:** $DATE\n\n### Resumen\n$RESUMEN\n\n### Nuevos documentos\n$NUEVOS\n\n---\n*GitHub Actions + Magisterium AI*" \
+            --title "Revision trimestral ERE vs Catequesis - $DATE - HAY CAMBIOS" \
+            --body "ATENCION: Se detectaron cambios. Fecha: $DATE. Resumen: $RESUMEN. Nuevos documentos: $NUEVOS. Revisar revisiones/revision-$DATE.json para el detalle completo." \
             --head "$BRANCH" \
             --base main
