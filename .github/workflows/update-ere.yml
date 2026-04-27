@@ -65,60 +65,96 @@ jobs:
           with open("revision_result.json", "w") as f:
               json.dump(data, f, ensure_ascii=False, indent=2)
 
-          resumen = data.get('resumen', 'Sin datos').replace('\n', ' ').replace('"', '')
-          nuevos = ', '.join(data.get('nuevos_documentos', [])) or 'Ninguno'
+          resumen = data.get('resumen','Sin datos').replace('\n',' ').replace('"','')
+          nuevos = ', '.join(data.get('nuevos_documentos',[])) or 'Ninguno'
+          hay_cambios = str(data.get('hay_cambios',False)).lower()
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"hay_cambios={str(data.get('hay_cambios', False)).lower()}\n")
+              f.write(f"hay_cambios={hay_cambios}\n")
               f.write(f"resumen={resumen}\n")
               f.write(f"nuevos={nuevos}\n")
               f.write(f"fecha={today}\n")
           PYEOF
 
-      - name: Crear Issue de notificacion (sin cambios)
-        if: steps.review.outputs.hay_cambios == 'false'
+      - name: Registrar en Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          RUN_URL: https://github.com/etbeducation/ere-vs-catequesis/actions/runs/${{ github.run_id }}
+        run: |
+          python3 << 'PYEOF'
+          import requests, json, os
+
+          token = os.environ["NOTION_TOKEN"]
+          run_url = os.environ["RUN_URL"]
+          fecha = "${{ steps.review.outputs.fecha }}"
+          resumen = "${{ steps.review.outputs.resumen }}"
+          nuevos = "${{ steps.review.outputs.nuevos }}"
+          hay_cambios = "${{ steps.review.outputs.hay_cambios }}"
+
+          resultado = "Hay cambios" if hay_cambios == "true" else "Sin cambios"
+          titulo = f"{fecha} - {resultado}"
+
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Content-Type": "application/json",
+              "Notion-Version": "2022-06-28"
+          }
+
+          payload = {
+              "parent": {"database_id": "739fbeb2d24b4b879615a6247b402809"},
+              "properties": {
+                  "Titulo": {"title": [{"text": {"content": titulo}}]},
+                  "Resultado": {"select": {"name": resultado}},
+                  "Resumen": {"rich_text": [{"text": {"content": resumen[:2000]}}]},
+                  "Nuevos documentos": {"rich_text": [{"text": {"content": nuevos}}]},
+                  "Run GitHub": {"url": run_url},
+                  "Fuente": {"select": {"name": "Automatica"}},
+                  "Fecha": {"date": {"start": fecha}}
+              }
+          }
+
+          r = requests.post("https://api.notion.com/v1/pages", headers=headers, json=payload)
+          print(f"Notion status: {r.status_code}")
+          if r.status_code != 200:
+              print(r.text)
+          PYEOF
+
+      - name: Crear Issue de notificacion
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           DATE="${{ steps.review.outputs.fecha }}"
-          RESUMEN="${{ steps.review.outputs.resumen }}"
+          RESULTADO="${{ steps.review.outputs.hay_cambios }}"
+          if [ "$RESULTADO" = "true" ]; then
+            TITULO="ATENCION - Revision trimestral ERE vs Catequesis - $DATE - HAY CAMBIOS"
+          else
+            TITULO="Revision trimestral ERE vs Catequesis - $DATE - Sin cambios"
+          fi
           gh issue create \
-            --title "Revision trimestral ERE vs Catequesis - $DATE - Sin cambios" \
-            --body "Revision trimestral completada el $DATE. Resultado: Sin cambios necesarios. Resumen de Magisterium AI: $RESUMEN. Las referencias del sitio web siguen siendo validas. Revision automatica por GitHub Actions + Magisterium AI."
+            --title "$TITULO" \
+            --body "Revision completada el $DATE. Ver registro detallado en Notion: https://www.notion.so/739fbeb2d24b4b879615a6247b402809"
 
-      - name: Guardar registro sin cambios
-        if: steps.review.outputs.hay_cambios == 'false'
+      - name: Guardar registro
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           DATE="${{ steps.review.outputs.fecha }}"
+          HAY_CAMBIOS="${{ steps.review.outputs.hay_cambios }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           mkdir -p revisiones
           cp revision_result.json "revisiones/revision-$DATE.json"
           git add revisiones/
-          git diff --staged --quiet || git commit -m "Revision trimestral $DATE - sin cambios"
-          git push origin main
-
-      - name: Crear Pull Request si hay cambios
-        if: steps.review.outputs.hay_cambios == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          DATE="${{ steps.review.outputs.fecha }}"
-          RESUMEN="${{ steps.review.outputs.resumen }}"
-          NUEVOS="${{ steps.review.outputs.nuevos }}"
-          BRANCH="actualizacion-trimestral-$DATE"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          mkdir -p revisiones
-          cp revision_result.json "revisiones/revision-$DATE.json"
-          git add revisiones/
-          git commit -m "Revision trimestral $DATE - hay cambios"
-          git push origin "$BRANCH"
-          gh pr create \
-            --title "Revision trimestral ERE vs Catequesis - $DATE - HAY CAMBIOS" \
-            --body "ATENCION: Se detectaron cambios. Fecha: $DATE. Resumen: $RESUMEN. Nuevos documentos: $NUEVOS. Revisar revisiones/revision-$DATE.json para el detalle completo." \
-            --head "$BRANCH" \
-            --base main
+          git diff --staged --quiet || git commit -m "Revision trimestral $DATE"
+          if [ "$HAY_CAMBIOS" = "true" ]; then
+            BRANCH="actualizacion-trimestral-$DATE"
+            git checkout -b "$BRANCH"
+            git push origin "$BRANCH"
+            gh pr create \
+              --title "Revision trimestral $DATE - HAY CAMBIOS" \
+              --body "Se detectaron cambios. Ver Notion para detalles." \
+              --head "$BRANCH" \
+              --base main
+          else
+            git push origin main
+          fi
