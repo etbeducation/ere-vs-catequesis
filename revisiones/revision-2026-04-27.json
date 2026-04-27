@@ -1,7 +1,5 @@
 {
   "hay_cambios": false,
-  "nuevos_documentos": [],
-  "correcciones": [],
-  "resumen": "Error conectando con Magisterium AI",
+  "resumen": "Error: HTTPSConnectionPool(host='www.magisterium.com', port=443): Read timed out. (read timeout=60)",
   "fecha_revision": "2026-04-27"
 }
